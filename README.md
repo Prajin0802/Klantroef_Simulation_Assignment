@@ -105,7 +105,7 @@ media-platform-backend/
    docker-compose logs -f app
    ```
 
-## 📊 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /auth/signup` - Create admin account
@@ -124,7 +124,7 @@ media-platform-backend/
 ### Health Check
 - `GET /health` - Application health status
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -143,7 +143,7 @@ media-platform-backend/
 - **Authentication**: 5 attempts per 15 minutes
 - **File Uploads**: 10 uploads per hour
 
-## 🧪 Testing
+## Testing
 
 ### Run All Tests
 ```bash
@@ -165,7 +165,7 @@ npm run test:watch
 node test-api.js
 ```
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Docker Deployment
 ```bash
@@ -199,7 +199,7 @@ docker-compose --profile production up -d
 - **File Upload Security** - Type and size validation
 - **SQL Injection Prevention** - Parameterized queries
 
-## 📈 Monitoring
+## Monitoring
 
 ### Health Check
 ```bash
