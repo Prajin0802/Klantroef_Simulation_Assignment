@@ -2,7 +2,7 @@
 
 A production-ready media platform backend built with Node.js and Express. Features authentication, file uploads, secure streaming, analytics, caching, rate limiting, and comprehensive testing.
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
 - **Admin Authentication** - JWT-based signup/login system
@@ -22,7 +22,7 @@ A production-ready media platform backend built with Node.js and Express. Featur
 - **Docker Support** - Containerized deployment
 - **Automated Testing** - Comprehensive test suite with Jest
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 media-platform-backend/
@@ -55,7 +55,7 @@ media-platform-backend/
     └── .gitkeep          # Placeholder file
 ```
 
-## 🛠️ Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -189,7 +189,7 @@ docker-compose --profile production up -d
 - **Rate Limiting**: Protection against abuse
 - **Security Headers**: Enhanced security with Helmet.js
 
-## 🔒 Security Features
+## Security Features
 
 - **JWT Authentication** - Secure token-based auth
 - **Password Hashing** - bcrypt with salt rounds
@@ -216,7 +216,7 @@ curl http://localhost:3000/health
 - Performance monitoring
 - Rate limit tracking
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -225,18 +225,18 @@ curl http://localhost:3000/health
 5. Run the test suite
 6. Submit a pull request
 
-## 📝 License
+## License
 
 MIT License - see LICENSE file for details
 
-## 🆘 Support
+## Support
 
 - Check the [API Documentation](API_DOCUMENTATION.md)
 - Review the [Setup Guide](SETUP_GUIDE.md)
 - Run tests to verify functionality
 - Check logs for error details
 
-## 🎯 Learning Outcomes
+## Learning Outcomes
 
 This project demonstrates:
 - **Backend Development** - Express.js, Node.js
