@@ -2,11 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { runQuery, getRow } = require('../config/database');
+const { authLimiter } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
 // POST /auth/signup - Create new admin account
-router.post('/signup', async (req, res) => {
+router.post('/signup', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -79,7 +80,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // POST /auth/login - Login and get JWT token
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 

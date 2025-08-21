@@ -3,8 +3,16 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
 const { runQuery, getRow, getAll } = require('../config/database');
+const { 
+  getCachedData, 
+  setCachedData, 
+  generateAnalyticsCacheKey, 
+  invalidateAnalyticsCache 
+} = require('../config/redis');
 const authenticateToken = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { viewLoggingLimiter, uploadLimiter } = require('../middleware/rateLimit');
+const { validateFileUpload } = require('../middleware/security');
 
 const router = express.Router();
 
@@ -12,7 +20,7 @@ const router = express.Router();
 const streamingTokens = new Map();
 
 // POST /media - Upload media file (requires authentication)
-router.post('/', authenticateToken, upload.single('media'), async (req, res) => {
+router.post('/', authenticateToken, uploadLimiter, upload.single('media'), validateFileUpload, async (req, res) => {
   try {
     // Check if file was uploaded
     if (!req.file) {
@@ -65,8 +73,8 @@ router.post('/', authenticateToken, upload.single('media'), async (req, res) => 
   }
 });
 
-// POST /media/:id/view - Log a view (IP + timestamp)
-router.post('/:id/view', async (req, res) => {
+// POST /media/:id/view - Log a view (IP + timestamp) with rate limiting
+router.post('/:id/view', viewLoggingLimiter, async (req, res) => {
   try {
     const mediaId = req.params.id;
     const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
@@ -89,6 +97,9 @@ router.post('/:id/view', async (req, res) => {
       [mediaId, clientIP]
     );
 
+    // Invalidate analytics cache for this media
+    await invalidateAnalyticsCache(mediaId);
+
     res.status(201).json({
       message: 'View logged successfully',
       media: {
@@ -109,7 +120,7 @@ router.post('/:id/view', async (req, res) => {
   }
 });
 
-// GET /media/:id/analytics - Get analytics data (requires authentication)
+// GET /media/:id/analytics - Get analytics data with Redis caching
 router.get('/:id/analytics', authenticateToken, async (req, res) => {
   try {
     const mediaId = req.params.id;
@@ -125,6 +136,26 @@ router.get('/:id/analytics', authenticateToken, async (req, res) => {
         error: 'Media not found' 
       });
     }
+
+    // Try to get cached analytics data
+    const cacheKey = generateAnalyticsCacheKey(mediaId);
+    const cachedData = await getCachedData(cacheKey);
+    
+    if (cachedData) {
+      console.log(`📊 Analytics served from cache for media ${mediaId}`);
+      return res.json({
+        message: 'Analytics retrieved successfully (cached)',
+        media: {
+          id: media.id,
+          title: media.title
+        },
+        analytics: cachedData,
+        cached: true
+      });
+    }
+
+    // If not cached, fetch from database
+    console.log(`📊 Fetching analytics from database for media ${mediaId}`);
 
     // Get total views
     const totalViewsResult = await getRow(
@@ -165,21 +196,27 @@ router.get('/:id/analytics', authenticateToken, async (req, res) => {
       LIMIT 10
     `, [mediaId]);
 
+    const analyticsData = {
+      total_views: totalViewsResult.total_views || 0,
+      unique_ips: uniqueIPsResult.unique_ips || 0,
+      views_per_day: viewsPerDayObject,
+      recent_views: recentViews.map(view => ({
+        ip: view.viewed_by_ip,
+        timestamp: view.timestamp
+      }))
+    };
+
+    // Cache the analytics data for 5 minutes
+    await setCachedData(cacheKey, analyticsData, 300);
+
     res.json({
       message: 'Analytics retrieved successfully',
       media: {
         id: media.id,
         title: media.title
       },
-      analytics: {
-        total_views: totalViewsResult.total_views || 0,
-        unique_ips: uniqueIPsResult.unique_ips || 0,
-        views_per_day: viewsPerDayObject,
-        recent_views: recentViews.map(view => ({
-          ip: view.viewed_by_ip,
-          timestamp: view.timestamp
-        }))
-      }
+      analytics: analyticsData,
+      cached: false
     });
 
   } catch (error) {
@@ -224,6 +261,9 @@ router.get('/:id/stream-url', async (req, res) => {
       'INSERT INTO MediaViewLog (media_id, viewed_by_ip) VALUES (?, ?)',
       [mediaId, clientIP]
     );
+
+    // Invalidate analytics cache
+    await invalidateAnalyticsCache(mediaId);
 
     // Create secure streaming URL
     const secureUrl = `${req.protocol}://${req.get('host')}/media/${mediaId}/stream?token=${streamingToken}`;
